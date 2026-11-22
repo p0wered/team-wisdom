@@ -98,6 +98,7 @@
   font-family: var(--font-display);
   font-weight: var(--display-weight);
   font-size: clamp(2.75rem, 1.4rem + 3.8vw, 4.75rem);
+  font-variation-settings: var(--display-variation);
   line-height: var(--display-leading);
   letter-spacing: var(--display-tracking);
   text-wrap: balance;

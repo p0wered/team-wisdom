@@ -11,53 +11,21 @@
   --line: rgb(255 255 255 / 0.16);
   --ground: #060606;
 
-  /* Type tokens — overridden per pairing below (see src/fonts.ts). */
-  --font-display: 'Geist Variable', system-ui, sans-serif;
-  --font-body: 'Geist Variable', system-ui, sans-serif;
-  --font-accent: 'Geist Mono Variable', ui-monospace, monospace;
+  /*
+   * Type: Geologica + Martian Mono (both OFL, Latin + Cyrillic).
+   * Geologica carries headlines and text; its sharpness axis (SHRP) is
+   * turned up in headlines only for crisp, chiselled terminals. Martian Mono
+   * is the accent face for small labels, scores and data.
+   */
+  --font-display: 'Geologica Variable', system-ui, sans-serif;
+  --font-body: 'Geologica Variable', system-ui, sans-serif;
+  --font-accent: 'Martian Mono Variable', ui-monospace, monospace;
   --display-weight: 500;
-  --display-tracking: -0.045em;
+  --display-tracking: -0.04em;
   --display-leading: 1;
+  --display-variation: 'SHRP' 100;
   --accent-case: uppercase;
-  --accent-tracking: 0.08em;
-}
-
-/* Geist + Geist Mono: tight neutral grotesk, mono labels. */
-:root[data-fonts='geist'] {
-  --font-display: 'Geist Variable', system-ui, sans-serif;
-  --font-body: 'Geist Variable', system-ui, sans-serif;
-  --font-accent: 'Geist Mono Variable', ui-monospace, monospace;
-  --display-weight: 500;
-  --display-tracking: -0.045em;
-  --accent-tracking: 0.04em;
-}
-
-/* Manrope + Inter: rounder, friendlier geometric headline. */
-:root[data-fonts='manrope'] {
-  --font-display: 'Manrope Variable', system-ui, sans-serif;
-  --font-body: 'Inter Variable', system-ui, sans-serif;
-  --font-accent: 'Inter Variable', system-ui, sans-serif;
-  --display-weight: 600;
-  --display-tracking: -0.04em;
-}
-
-/* Onest + Inter: crisp neo-grotesk headline. */
-:root[data-fonts='onest'] {
-  --font-display: 'Onest Variable', system-ui, sans-serif;
-  --font-body: 'Inter Variable', system-ui, sans-serif;
-  --font-accent: 'Inter Variable', system-ui, sans-serif;
-  --display-weight: 500;
-  --display-tracking: -0.04em;
-}
-
-/* Inter Display + Inter: the optical-size axis turns Inter into Inter
-   Display at headline sizes. */
-:root[data-fonts='inter'] {
-  --font-display: 'Inter Variable', system-ui, sans-serif;
-  --font-body: 'Inter Variable', system-ui, sans-serif;
-  --font-accent: 'Inter Variable', system-ui, sans-serif;
-  --display-weight: 600;
-  --display-tracking: -0.035em;
+  --accent-tracking: 0.02em;
 }
 
 html,
@@ -70,6 +38,5 @@ body {
 body {
   min-height: 100dvh;
   font-family: var(--font-body);
-  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
 }

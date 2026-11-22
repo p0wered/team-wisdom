@@ -24,7 +24,6 @@ export function App() {
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.wrap}>
             <div className={styles.copy}>
-              <p className={styles.eyebrow}>Talent assessment platform</p>
               <h1 id="hero-title" className={styles.title}>
                 Build teams that work.
               </h1>

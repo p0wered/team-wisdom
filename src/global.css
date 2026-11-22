@@ -1,0 +1,75 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --ink: #f4f1ec;
+  --ink-muted: #a19d97;
+  --ink-faint: #75716c;
+  --line: rgb(255 255 255 / 0.16);
+  --ground: #060606;
+
+  /* Type tokens — overridden per pairing below (see src/fonts.ts). */
+  --font-display: 'Geist Variable', system-ui, sans-serif;
+  --font-body: 'Geist Variable', system-ui, sans-serif;
+  --font-accent: 'Geist Mono Variable', ui-monospace, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.045em;
+  --display-leading: 1;
+  --accent-case: uppercase;
+  --accent-tracking: 0.08em;
+}
+
+/* Geist + Geist Mono: tight neutral grotesk, mono labels. */
+:root[data-fonts='geist'] {
+  --font-display: 'Geist Variable', system-ui, sans-serif;
+  --font-body: 'Geist Variable', system-ui, sans-serif;
+  --font-accent: 'Geist Mono Variable', ui-monospace, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.045em;
+  --accent-tracking: 0.04em;
+}
+
+/* Manrope + Inter: rounder, friendlier geometric headline. */
+:root[data-fonts='manrope'] {
+  --font-display: 'Manrope Variable', system-ui, sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+  --font-accent: 'Inter Variable', system-ui, sans-serif;
+  --display-weight: 600;
+  --display-tracking: -0.04em;
+}
+
+/* Onest + Inter: crisp neo-grotesk headline. */
+:root[data-fonts='onest'] {
+  --font-display: 'Onest Variable', system-ui, sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+  --font-accent: 'Inter Variable', system-ui, sans-serif;
+  --display-weight: 500;
+  --display-tracking: -0.04em;
+}
+
+/* Inter Display + Inter: the optical-size axis turns Inter into Inter
+   Display at headline sizes. */
+:root[data-fonts='inter'] {
+  --font-display: 'Inter Variable', system-ui, sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+  --font-accent: 'Inter Variable', system-ui, sans-serif;
+  --display-weight: 600;
+  --display-tracking: -0.035em;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+body {
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}

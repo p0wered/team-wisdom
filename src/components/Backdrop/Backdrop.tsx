@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import type { Theme } from '../../theme'
 import styles from './Backdrop.module.css'
 
 /**
@@ -25,44 +24,11 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `
 
 /**
- * The room picture per theme. Each snippet sets `vec3 col` from `p` (CSS px,
- * top-left origin), `css` (viewport, CSS px) and `uv` (0–1).
+ * The room: a pale wall in morning sun, with bands of light from the blind
+ * slanted 21°. Sets `vec3 col` from `p` (CSS px, top-left origin), `css`
+ * (viewport, CSS px) and `uv` (0–1).
  */
-const SCENES: Record<Theme, string> = {
-  // A dark room: the wall lighter towards the window, a faint warm glow, and
-  // a soft sheet of sunlight across the floor.
-  dark: `
-
-  // Wall: ellipse 120% × 85% centred at 38% / 0%, lighter towards the window.
-  float t = length((uv - vec2(0.38, 0.0)) / vec2(1.2, 0.85));
-  vec3 col = t < 0.42
-    ? mix(rgb(25.0, 24.0, 23.0), rgb(13.0, 12.0, 12.0), t / 0.42)
-    : mix(rgb(13.0, 12.0, 12.0), rgb(6.0, 6.0, 6.0), clamp((t - 0.42) / 0.30, 0.0, 1.0));
-
-  // Warm glow near the window (upper left).
-  float g = length((uv - vec2(0.45, 0.125)) / vec2(0.35, 0.375));
-  col = mix(col, rgb(255.0, 236.0, 214.0), 0.05 * (1.0 - smoothstep(0.0, 1.0, g)));
-
-  // Soft sheet of sunlight across the floor: a long ellipse near the bottom,
-  // tilted 6°, brightest a little left of centre, feathered like a blur.
-  vec2 c = vec2(0.5, 0.84) * css;
-  vec2 halfSize = vec2(0.8, 0.12) * css;
-  float a = radians(6.0);
-  vec2 q = p - c;
-  q = vec2(q.x * cos(a) - q.y * sin(a), q.x * sin(a) + q.y * cos(a));
-  float e = length(q / halfSize);
-  float feather = 34.0 / halfSize.y;
-  float inside = 1.0 - smoothstep(1.0 - feather, 1.0 + feather, e);
-  float s = clamp(q.x / (2.0 * halfSize.x) + 0.5, 0.0, 1.0);
-  float profile =
-      s < 0.22 ? mix(0.0, 0.04, s / 0.22)
-    : s < 0.42 ? mix(0.04, 0.09, (s - 0.22) / 0.20)
-    : s < 0.68 ? mix(0.09, 0.03, (s - 0.42) / 0.26)
-    :            mix(0.03, 0.0, (s - 0.68) / 0.32);
-  col = mix(col, rgb(255.0, 238.0, 220.0), profile * inside);
-`,
-  // A pale wall in morning sun: bands of light from the blind, slanted 21°.
-  light: `
+const SCENE = `
 
   // Wall: Apple's pale grey, a little brighter and warmer towards the window
   // (upper left), a little deeper towards the floor (lower right).
@@ -91,10 +57,9 @@ const SCENES: Record<Theme, string> = {
   // Faint warm haze where the sun enters (upper left).
   float g = length((uv - vec2(0.18, 0.05)) / vec2(0.55, 0.5));
   col = mix(col, rgb(255.0, 250.0, 240.0), 0.35 * (1.0 - smoothstep(0.0, 1.0, g)));
-`,
-}
+`
 
-const frag = (scene: string) => `
+const FRAG = `
 precision highp float;
 uniform vec2 uRes;      // drawing-buffer size, device px
 uniform float uDpr;
@@ -114,7 +79,7 @@ void main() {
   vec2 css = uRes / uDpr;                       // viewport in CSS px
   vec2 p = vec2(px.x, uRes.y - px.y) / uDpr;    // CSS px, top-left origin
   vec2 uv = p / css;
-${scene}
+${SCENE}
 
   // Film grain: one value per CSS pixel per frame, signed.
   float grain = hash(vec3(floor(p), uFrame)) - 0.5;
@@ -130,18 +95,13 @@ ${scene}
 
 const FPS = 12
 
-/** Grain amplitude per theme: dark grain reads stronger on a light wall. */
-const GRAIN: Record<Theme, number> = { dark: 0.022, light: 0.014 }
-
 type BackdropProps = {
-  theme: Theme
   className?: string
-  /** Grain amplitude: 0 = off, ~0.03 = clearly filmic. Defaults per theme. */
+  /** Grain amplitude: 0 = off, ~0.03 = clearly filmic. Dark grain reads strongly on a light wall. */
   grain?: number
 }
 
-export function Backdrop({ theme, className, grain: grainProp }: BackdropProps) {
-  const grain = grainProp ?? GRAIN[theme]
+export function Backdrop({ className, grain = 0.014 }: BackdropProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -172,7 +132,7 @@ export function Backdrop({ theme, className, grain: grainProp }: BackdropProps) 
     }
     const program = gl.createProgram()!
     gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT))
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, frag(SCENES[theme])))
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG))
     gl.linkProgram(program)
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       if (import.meta.env.DEV) console.error('Backdrop shader:', gl.getProgramInfoLog(program))
@@ -232,7 +192,7 @@ export function Backdrop({ theme, className, grain: grainProp }: BackdropProps) 
       gl.deleteBuffer(buffer)
       gl.deleteProgram(program)
     }
-  }, [grain, theme])
+  }, [grain])
 
   return <canvas ref={canvasRef} className={[styles.canvas, className].filter(Boolean).join(' ')} aria-hidden="true" />
 }

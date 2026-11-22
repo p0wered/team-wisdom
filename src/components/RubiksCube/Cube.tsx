@@ -3,17 +3,14 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { useTexture } from '@react-three/drei'
-import { createCubeMaterials, CUBE_TEXTURES, prepareTextures } from './materials'
-import { CUBE_LOOKS } from './looks'
-import type { Theme } from '../../theme'
+import { createCubeMaterials, CUBE_TEXTURES, prepareTextures, type CubeTextures } from './materials'
 
 /** Distance between neighbouring cubie centres. */
 const SPACING = 1
 /** Nearly solid cubie: the tiny gap reads as a fine dark seam. */
 const CUBIE_SIZE = 0.995
-
-/** `shuffle` motion (dark theme): the even pace of the original. */
-const SHUFFLE_TURN = { duration: 0.6, pause: 0.25, firstDelay: 0.8 }
+/** Corner radius of a cubie (edge length ≈ 1). */
+const CUBIE_RADIUS = 0.065
 
 /** Quarter turns per scramble. */
 const SCRAMBLE_MOVES = 12
@@ -65,7 +62,7 @@ function flick(t: number) {
  * How lively the free tumble is in each phase: calm while solving (focus),
  * agitated while scrambling, slow and showing off when solved.
  */
-const TUMBLE_ENERGY = { solve: 1, scramble: 3.2, solved: 0.55, shuffle: 1 } as const
+const TUMBLE_ENERGY = { solve: 1, scramble: 3.2, solved: 0.55 } as const
 
 type Axis = 'x' | 'y' | 'z'
 type Move = { axis: Axis; layer: -1 | 0 | 1; dir: 1 | -1 }
@@ -115,25 +112,23 @@ function randomMove(prev: Move | null): Move {
 }
 
 type CubeProps = {
-  theme: Theme
   /** Disable layer turns and drift (prefers-reduced-motion). */
   reducedMotion?: boolean
   /** Entrance and turns start only once shaders are compiled. */
   readyRef: RefObject<boolean>
 }
 
-export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
-  const look = CUBE_LOOKS[theme]
+export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
   const tiltRef = useRef<THREE.Group>(null)
   const viewport = useThree((s) => s.size)
 
   // Suspends until every photo map is loaded (covered by <Suspense> above).
-  const photo = useTexture(CUBE_TEXTURES[theme]) as Record<string, THREE.Texture>
+  const photo = useTexture(CUBE_TEXTURES) as CubeTextures
 
   const { root, pivot, cubies, scramble, dispose } = useMemo(() => {
     prepareTextures(photo)
-    const materials = createCubeMaterials(theme, photo)
-    const geometry = new RoundedBoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE, 6, look.radius)
+    const materials = createCubeMaterials(photo)
+    const geometry = new RoundedBoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE, 6, CUBIE_RADIUS)
 
     const root = new THREE.Group()
     const pivot = new THREE.Group()
@@ -145,14 +140,14 @@ export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
     root.add(core)
 
     // RoundedBoxGeometry keeps BoxGeometry's face groups (+x, −x, +y, −y, +z, −z),
-    // so a cubie can take one material or one per face.
+    // so a cubie takes one material per face.
 
     const cubies: THREE.Mesh[] = []
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
           if (x === 0 && y === 0 && z === 0) continue
-          const cubie = new THREE.Mesh(geometry, materials.forCubie(x, y, z, cubies.length))
+          const cubie = new THREE.Mesh(geometry, materials.forCubie(x, y, z))
           cubie.position.set(x * SPACING, y * SPACING, z * SPACING)
           cubie.castShadow = true
           cubie.receiveShadow = true
@@ -162,10 +157,10 @@ export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
       }
     }
 
-    // `solve`: the cube first appears already scrambled — chaos — and its
-    // opening act is solving itself. (With reduced motion it appears solved.)
+    // The cube first appears already scrambled — chaos — and its opening act
+    // is solving itself. (With reduced motion it appears solved.)
     const scramble: Move[] = []
-    if (look.motion === 'solve' && !reducedMotion) {
+    if (!reducedMotion) {
       let prev: Move | null = null
       for (let i = 0; i < SCRAMBLE_MOVES; i++) {
         prev = randomMove(prev)
@@ -186,7 +181,7 @@ export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
         materials.dispose()
       },
     }
-  }, [photo, theme, look, reducedMotion])
+  }, [photo, reducedMotion])
 
   useEffect(() => dispose, [dispose])
 
@@ -197,7 +192,7 @@ export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
    * Solving plays the scramble back in reverse, so it always ends solved.
    */
   const turn = useRef({
-    phase: 'solve' as 'scramble' | 'solve' | 'solved' | 'shuffle',
+    phase: 'solve' as 'scramble' | 'solve' | 'solved',
     history: [] as Move[],
     /** Moves in this solve, to know how far along it is (pace picks up). */
     total: 0,
@@ -214,27 +209,21 @@ export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
   // Bind the loop to the scene actually committed (StrictMode may build two;
   // a reduced-motion change rebuilds it): solving must undo *this* scramble.
   useLayoutEffect(() => {
-    const shuffle = look.motion === 'shuffle'
     Object.assign(turn.current, {
-      phase: shuffle ? 'shuffle' : scramble.length ? 'solve' : 'solved',
+      phase: scramble.length ? 'solve' : 'solved',
       history: scramble.slice(),
       total: scramble.length,
       move: null,
       prev: null,
-      wait: shuffle ? SHUFFLE_TURN.firstDelay : FIRST_SOLVE_DELAY,
+      wait: FIRST_SOLVE_DELAY,
       burstLeft: 0,
       members: [],
     })
-  }, [scramble, look])
+  }, [scramble])
 
   /** Pick the next move and how long it takes; null = nothing to turn right now. */
   const nextMove = (): Move | null => {
     const t = turn.current
-
-    if (t.phase === 'shuffle') {
-      t.duration = SHUFFLE_TURN.duration
-      return randomMove(t.prev)
-    }
 
     if (t.phase === 'solved') {
       // Held long enough: shuffle again.
@@ -301,9 +290,7 @@ export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
     t.move = null
     t.members = []
 
-    if (t.phase === 'shuffle') {
-      t.wait = SHUFFLE_TURN.pause
-    } else if (t.phase === 'scramble') {
+    if (t.phase === 'scramble') {
       t.wait = Math.random() < RHYTHM.stumbleChance ? rand(RHYTHM.stumble) : rand(RHYTHM.scrambleGap)
     } else if (t.history.length === 0) {
       // Solved — every colour in place. Hold the moment.
@@ -406,9 +393,7 @@ export function Cube({ theme, reducedMotion = false, readyRef }: CubeProps) {
 
     t.elapsed += delta
     const progress = Math.min(1, t.elapsed / t.duration)
-    // Shuffle keeps the original smooth ease; the solving loop turns with a flick.
-    const eased = t.phase === 'shuffle' ? easeInOutCubic(progress) : flick(progress)
-    const angle = eased * (Math.PI / 2) * t.move.dir
+    const angle = flick(progress) * (Math.PI / 2) * t.move.dir
     pivot.quaternion.setFromAxisAngle(AXIS_VECTORS[t.move.axis], angle)
     if (progress >= 1) finishTurn(state.clock.elapsedTime)
   })

@@ -4,13 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f5f5f7" />
-    <!-- Apply ?theme=dark before first paint, so the light theme never flashes. -->
-    <script>
-      ;(function () {
-        var t = new URLSearchParams(location.search).get('theme')
-        if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t
-      })()
-    </script>
     <title>TeamWisdom — оценка людей и сборка команд</title>
     <meta
       name="description"

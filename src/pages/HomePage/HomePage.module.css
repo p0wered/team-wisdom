@@ -8,10 +8,9 @@
 }
 
 /*
- * The room behind the cube — a pale sunlit wall (light) or a dark room with
- * a sheet of sunlight on the floor (dark). Drawn for real by <Backdrop> (a
- * dithered shader with film grain); these CSS gradients are the fallback
- * without WebGL.
+ * The room behind the cube — a pale sunlit wall. Drawn for real by
+ * <Backdrop> (a dithered shader with film grain); these CSS gradients are
+ * the fallback without WebGL.
  */
 .backdrop {
   position: absolute;
@@ -22,10 +21,4 @@
     radial-gradient(60% 55% at 18% 5%, #fffaf2 0%, transparent 100%),
     radial-gradient(125% 110% at 15% 0%, #f6f5f4 0%, #e9e9ec 100%),
     #ededf0;
-}
-
-:global([data-theme='dark']) .backdrop {
-  background:
-    radial-gradient(120% 85% at 38% 0%, #191817 0%, #0d0c0c 42%, #060606 72%),
-    #050505;
 }

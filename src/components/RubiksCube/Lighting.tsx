@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
-import { createBlindsTexture, createSoftSpotTexture } from '../textures'
+import { createBlindsTexture, createSoftSpotTexture } from './textures'
 
 RectAreaLightUniformsLib.init()
 
@@ -46,7 +46,7 @@ const LIGHT = {
  * - Sun through the blind: soft warm bands moving over the faces.
  * - Environment: the window and the room, for reflections only.
  */
-export function LightLighting() {
+export function Lighting() {
   const textures = useMemo(() => ({ soft: createSoftSpotTexture(), blinds: createBlindsTexture(BLINDS_SLANT) }), [])
   useEffect(() => () => Object.values(textures).forEach((t) => t.dispose()), [textures])
 

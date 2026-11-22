@@ -3,8 +3,7 @@ import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Renderer } from './Renderer'
 import { Cube } from './Cube'
-import { CUBE_LOOKS } from './looks'
-import type { Theme } from '../../theme'
+import { Lighting } from './Lighting'
 import styles from './RubiksCube.module.css'
 
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
@@ -38,17 +37,16 @@ function OrthoFit({ viewHeight }: { viewHeight: number }) {
   return null
 }
 
+/** Bloom only catches the brightest highlights on the bevels. */
+const BLOOM = { threshold: 3.5, strength: 0.12 }
+
 type RubiksCubeProps = {
-  /** Fixed for the canvas' lifetime: remount (key) to switch. */
-  theme: Theme
   className?: string
   /** World units visible vertically; smaller = bigger cube in frame. */
   viewHeight?: number
 }
 
-export function RubiksCube({ theme, className, viewHeight = 6.6 }: RubiksCubeProps) {
-  const look = CUBE_LOOKS[theme]
-  const { Lighting } = look
+export function RubiksCube({ className, viewHeight = 6.6 }: RubiksCubeProps) {
   const reducedMotion = usePrefersReducedMotion()
   /** Flipped by Renderer once shaders are compiled. */
   const readyRef = useRef(false)
@@ -66,16 +64,19 @@ export function RubiksCube({ theme, className, viewHeight = 6.6 }: RubiksCubePro
           alpha: true, // transparent: the page backdrop shows through
           stencil: false,
           powerPreference: 'high-performance',
-          toneMapping: look.toneMapping,
-          toneMappingExposure: look.exposure,
+          // Khronos PBR Neutral keeps base colours true (ACES shifts yellow
+          // towards orange and desaturates the blues): the Apple palette must
+          // read as itself.
+          toneMapping: THREE.NeutralToneMapping,
+          toneMappingExposure: 1,
         }}
         onCreated={({ gl }) => gl.setClearColor('#000000', 0)}
       >
         <OrthoFit viewHeight={viewHeight} />
         <Suspense fallback={null}>
           <Lighting />
-          <Cube theme={theme} reducedMotion={reducedMotion} readyRef={readyRef} />
-          <Renderer readyRef={readyRef} bloomThreshold={look.bloom.threshold} bloomStrength={look.bloom.strength} />
+          <Cube reducedMotion={reducedMotion} readyRef={readyRef} />
+          <Renderer readyRef={readyRef} bloomThreshold={BLOOM.threshold} bloomStrength={BLOOM.strength} />
         </Suspense>
       </Canvas>
     </div>

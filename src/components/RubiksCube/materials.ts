@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { createRandom } from '../textures'
+import { createRandom } from './textures'
 import { patchShader } from './shader'
 
 /**
@@ -9,14 +9,24 @@ import { patchShader } from './shader'
  * moulded plastic (normal + roughness) and handling smudges.
  */
 const base = import.meta.env.BASE_URL
-export const LIGHT_TEXTURES = {
+export const CUBE_TEXTURES = {
   grainRough: `${base}textures/satin_rough.jpg`,
   grainNormal: `${base}textures/satin_normal.jpg`,
   /** Fingerprint / smudge roughness overlay (Fingerprints002). */
   smudge: `${base}textures/smudge.jpg`,
 } as const
 
-export type LightTextures = Record<keyof typeof LIGHT_TEXTURES, THREE.Texture>
+export type CubeTextures = Record<keyof typeof CUBE_TEXTURES, THREE.Texture>
+
+/** Roughness / normal / smudge maps are raw data, not colour. */
+export function prepareTextures(textures: CubeTextures) {
+  for (const [key, tex] of Object.entries(textures)) {
+    tex.colorSpace = THREE.NoColorSpace
+    tex.anisotropy = 8
+    if (key === 'smudge') tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+    tex.needsUpdate = true
+  }
+}
 
 /**
  * Apple system colours (HIG, iOS 26, Default / light appearance) in the
@@ -39,9 +49,13 @@ const BODY_COLOR = '#2C2C2E'
 
 export type FaceName = keyof typeof FACE_COLORS
 
-export type LightMaterials = {
-  faces: Record<FaceName, THREE.MeshPhysicalMaterial>
-  body: THREE.MeshPhysicalMaterial
+export type CubeMaterialSet = {
+  /**
+   * Materials for the cubie at grid position (x, y, z) ∈ {−1, 0, 1}³, in
+   * the box face groups' order: +x, −x, +y, −y, +z, −z. Outer faces get
+   * their colour; inner faces are the plastic body.
+   */
+  forCubie: (x: number, y: number, z: number) => THREE.Material[]
   dispose: () => void
 }
 
@@ -53,7 +67,7 @@ export type LightMaterials = {
  *
  * A roughness map MULTIPLIES `roughness`; the grain map's mean is ≈ 0.65.
  */
-export function createLightMaterials(photo: LightTextures, seed = 11): LightMaterials {
+export function createCubeMaterials(photo: CubeTextures, seed = 11): CubeMaterialSet {
   const rand = createRandom(seed)
   const all: THREE.MeshPhysicalMaterial[] = []
 
@@ -85,5 +99,13 @@ export function createLightMaterials(photo: LightTextures, seed = 11): LightMate
 
   const body = plastic('body', BODY_COLOR, 0.85, 0.05)
 
-  return { faces, body, dispose: () => all.forEach((m) => m.dispose()) }
+  const side = (c: number, plus: THREE.Material, minus: THREE.Material) => [c === 1 ? plus : body, c === -1 ? minus : body]
+  return {
+    forCubie: (x, y, z) => [
+      ...side(x, faces.right, faces.left),
+      ...side(y, faces.up, faces.down),
+      ...side(z, faces.front, faces.back),
+    ],
+    dispose: () => all.forEach((m) => m.dispose()),
+  }
 }

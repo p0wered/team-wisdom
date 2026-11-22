@@ -2,14 +2,17 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  font-synthesis: none !important;
 }
 
 :root {
-  --ink: #f4f1ec;
-  --ink-muted: #a19d97;
-  --ink-faint: #75716c;
-  --line: rgb(255 255 255 / 0.16);
-  --ground: #060606;
+  /* Light theme: Apple's label and system-grey values (HIG, iOS 26). */
+  --ink: #1d1d1f;
+  --ink-muted: #6e6e73;
+  --ink-faint: #86868b;
+  --line: rgb(0 0 0 / 0.14);
+  --ground: #f5f5f7;
 
   /*
    * Type: Geologica + Martian Mono (both OFL, Latin + Cyrillic).
@@ -26,6 +29,7 @@
   --display-variation: 'SHRP' 100;
   --accent-case: uppercase;
   --accent-tracking: 0.02em;
+
 }
 
 html,

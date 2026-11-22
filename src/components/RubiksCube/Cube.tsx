@@ -3,19 +3,23 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { useTexture } from '@react-three/drei'
-import { createMaterials, PHOTO_TEXTURES, preparePhotoTextures, type PhotoTextures } from './materials'
+import { createMaterials, PHOTO_TEXTURES, preparePhotoTextures, type FaceName, type PhotoTextures } from './materials'
 
 /** Distance between neighbouring cubie centres. */
 const SPACING = 1
-/** Solid cubie; the tiny gap reads as a dark seam once AO is applied. */
+/** Nearly solid cubie: the tiny gap reads as a fine dark seam. */
 const CUBIE_SIZE = 0.995
-/** Wide, soft bevel like the original; textures keep a smooth frame over it. */
-const CUBIE_RADIUS = 0.055
+/** Small, crisp bevel, like a moulded speed cube. */
+const CUBIE_RADIUS = 0.04
 
-/** One quarter turn, seconds. */
-const TURN_DURATION = 0.6
-/** Pause between turns, seconds. */
-const TURN_PAUSE = 0.25
+/** One quarter turn and the pause after it, seconds — while scrambling… */
+const SCRAMBLE_TURN = { duration: 0.6, pause: 0.25 }
+/** …and while solving: quicker and more decisive, like a speedcuber. */
+const SOLVE_TURN = { duration: 0.38, pause: 0.07 }
+/** Quarter turns per scramble. */
+const SCRAMBLE_MOVES = 12
+/** How long the solved cube is held before the next scramble, seconds. */
+const SOLVED_HOLD = 2.6
 
 type Axis = 'x' | 'y' | 'z'
 type Move = { axis: Axis; layer: -1 | 0 | 1; dir: 1 | -1 }
@@ -68,7 +72,7 @@ export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
 
   const { root, pivot, cubies, dispose } = useMemo(() => {
     preparePhotoTextures(photo)
-    const { materials, dispose: disposeMaterials } = createMaterials(photo)
+    const materials = createMaterials(photo)
     const geometry = new RoundedBoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE, 6, CUBIE_RADIUS)
 
     const root = new THREE.Group()
@@ -80,13 +84,24 @@ export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
     const core = new THREE.Mesh(new THREE.SphereGeometry(1.25, 24, 16), coreMaterial)
     root.add(core)
 
+    // RoundedBoxGeometry keeps BoxGeometry's face groups: +x, −x, +y, −y, +z, −z.
+    // Faces on the outside of the cube get their colour; inner faces are body.
+    const { faces, body, dispose: disposeMaterials } = materials
+    const tile = (c: number, plus: FaceName, minus: FaceName) => [
+      c === 1 ? faces[plus] : body,
+      c === -1 ? faces[minus] : body,
+    ]
+
     const cubies: THREE.Mesh[] = []
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
           if (x === 0 && y === 0 && z === 0) continue
-          // Every cubie gets its own finish — 26 cubies, 26 materials.
-          const cubie = new THREE.Mesh(geometry, materials[cubies.length])
+          const cubie = new THREE.Mesh(geometry, [
+            ...tile(x, 'right', 'left'),
+            ...tile(y, 'up', 'down'),
+            ...tile(z, 'front', 'back'),
+          ])
           cubie.position.set(x * SPACING, y * SPACING, z * SPACING)
           cubie.castShadow = true
           cubie.receiveShadow = true
@@ -111,13 +126,43 @@ export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
 
   useEffect(() => dispose, [dispose])
 
+  /**
+   * The loop: start solved, scramble with slow random turns, then play the
+   * scramble back in reverse — quickly — until the cube is whole again, hold,
+   * repeat. Pieces scatter and come back together: what the product does
+   * with people.
+   */
   const turn = useRef({
+    phase: 'scramble' as 'scramble' | 'solve',
+    history: [] as Move[],
     move: null as Move | null,
     prev: null as Move | null,
     elapsed: 0,
-    wait: 0.8, // let the entrance animation play first
+    duration: SCRAMBLE_TURN.duration,
+    wait: 1.6, // let the entrance play and show the solved cube first
     members: [] as THREE.Object3D[],
   })
+
+  const nextMove = (): Move | null => {
+    const t = turn.current
+    if (t.phase === 'scramble') {
+      if (t.history.length < SCRAMBLE_MOVES) {
+        const move = randomMove(t.prev)
+        t.history.push(move)
+        return move
+      }
+      t.phase = 'solve'
+    }
+    const last = t.history.pop()
+    if (!last) {
+      // Solved: hold, then scramble again.
+      t.phase = 'scramble'
+      t.prev = null
+      t.wait = SOLVED_HOLD
+      return null
+    }
+    return { ...last, dir: last.dir === 1 ? -1 : 1 }
+  }
 
   const startTurn = (move: Move) => {
     const t = turn.current
@@ -129,6 +174,7 @@ export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
     t.members.forEach((c) => pivot.attach(c))
     t.move = move
     t.elapsed = 0
+    t.duration = t.phase === 'solve' ? SOLVE_TURN.duration : SCRAMBLE_TURN.duration
   }
 
   const finishTurn = () => {
@@ -142,7 +188,7 @@ export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
     t.prev = t.move
     t.move = null
     t.members = []
-    t.wait = TURN_PAUSE
+    t.wait = t.phase === 'solve' ? SOLVE_TURN.pause : SCRAMBLE_TURN.pause
   }
 
   // Camera FOV is vertical, so on portrait screens the cube would overflow
@@ -184,12 +230,15 @@ export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
     const t = turn.current
     if (!t.move) {
       t.wait -= delta
-      if (t.wait <= 0) startTurn(randomMove(t.prev))
+      if (t.wait <= 0) {
+        const move = nextMove()
+        if (move) startTurn(move)
+      }
       return
     }
 
     t.elapsed += delta
-    const progress = Math.min(1, t.elapsed / TURN_DURATION)
+    const progress = Math.min(1, t.elapsed / t.duration)
     const angle = easeInOutCubic(progress) * (Math.PI / 2) * t.move.dir
     pivot.quaternion.setFromAxisAngle(AXIS_VECTORS[t.move.axis], angle)
     if (progress >= 1) finishTurn()

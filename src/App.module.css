@@ -8,13 +8,9 @@
 }
 
 /*
- * Room backdrop: the cube shouldn't float in a void. A dark wall that is a
- * touch lighter towards the window (upper left), a faint warm glow, and a
- * soft sheet of sunlight across the floor — the same light that lights the
- * cube, visible in the room.
- *
- * Drawn for real by <Backdrop> (a dithered shader with film grain, no
- * banding); these CSS layers are the same picture as a fallback without WebGL.
+ * A pale wall with the morning sun coming through a blind — the same light
+ * that lands on the cube. Drawn for real by <Backdrop> (a dithered shader with
+ * a little film grain); this CSS gradient is the fallback without WebGL.
  */
 .backdrop {
   position: absolute;
@@ -22,37 +18,9 @@
   z-index: 0;
   overflow: hidden;
   background:
-    radial-gradient(120% 85% at 38% 0%, #191817 0%, #0d0c0c 42%, #060606 72%),
-    #050505;
-}
-
-.glow {
-  position: absolute;
-  top: -25%;
-  left: 10%;
-  width: 70%;
-  height: 75%;
-  background: radial-gradient(closest-side, rgb(255 236 214 / 0.05), transparent);
-  filter: blur(24px);
-}
-
-.beam {
-  position: absolute;
-  left: -30%;
-  bottom: 4%;
-  width: 160%;
-  height: 24%;
-  border-radius: 50%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgb(255 238 220 / 0.04) 22%,
-    rgb(255 238 220 / 0.09) 42%,
-    rgb(255 238 220 / 0.03) 68%,
-    transparent 100%
-  );
-  transform: rotate(-6deg);
-  filter: blur(34px);
+    radial-gradient(60% 55% at 18% 5%, #fffaf2 0%, transparent 100%),
+    radial-gradient(125% 110% at 15% 0%, #f6f5f4 0%, #e9e9ec 100%),
+    #ededf0;
 }
 
 /* ---------------------------------------------------------------- hero */
@@ -140,24 +108,26 @@
 }
 
 .primary {
-  color: #0b0b0b;
+  color: #fff;
   background: var(--ink);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 1px 2px rgb(0 0 0 / 0.12);
 }
 
 .primary:hover {
-  background: #fff;
+  background: #000;
 }
 
 .secondary {
   color: var(--ink);
-  background: rgb(255 255 255 / 0.02);
+  background: rgb(255 255 255 / 0.55);
   border: 1px solid var(--line);
 }
 
 .secondary:hover {
-  background: rgb(255 255 255 / 0.06);
-  border-color: rgb(255 255 255 / 0.28);
+  background: rgb(255 255 255 / 0.9);
+  border-color: rgb(0 0 0 / 0.24);
 }
 
 /* Same proportions as the original's canvas (648 × 550). */

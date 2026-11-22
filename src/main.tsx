@@ -4,10 +4,11 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/geologica/full.css' // all axes, incl. sharpness (SHRP)
 import '@fontsource-variable/martian-mono/wght.css'
 import './global.css'
-import { App } from './App'
+import { RouterProvider } from 'react-router/dom'
+import { router } from './router'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>,
 )

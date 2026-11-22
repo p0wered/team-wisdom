@@ -1,0 +1,24 @@
+.page {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  overflow-x: clip;
+  isolation: isolate;
+  background: var(--ground);
+}
+
+/*
+ * A pale wall with the morning sun coming through a blind — the same light
+ * that lands on the cube. Drawn for real by <Backdrop> (a dithered shader with
+ * a little film grain); this CSS gradient is the fallback without WebGL.
+ */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 55% at 18% 5%, #fffaf2 0%, transparent 100%),
+    radial-gradient(125% 110% at 15% 0%, #f6f5f4 0%, #e9e9ec 100%),
+    #ededf0;
+}

@@ -1,5 +1,6 @@
 import { Button } from '../Button'
 import { RubiksCube } from '../RubiksCube'
+import type { Theme } from '../../theme'
 import styles from './HeroSection.module.css'
 
 /**
@@ -10,7 +11,11 @@ import styles from './HeroSection.module.css'
  * that fits, people who will "сработаться" (get to work well together).
  * Non-breaking spaces (\u00a0) keep short words and dashes off line ends.
  */
-export function HeroSection() {
+type HeroSectionProps = {
+  theme: Theme
+}
+
+export function HeroSection({ theme }: HeroSectionProps) {
   return (
     <section className={styles.hero} aria-labelledby="hero-title">
       <div className={styles.wrap}>
@@ -34,7 +39,8 @@ export function HeroSection() {
         </div>
 
         <div className={styles.visual}>
-          <RubiksCube className={styles.cube} viewHeight={5} />
+          {/* A new canvas per theme: renderer settings are fixed at creation. */}
+          <RubiksCube key={theme} theme={theme} className={styles.cube} viewHeight={5} />
         </div>
       </div>
     </section>

@@ -1,7 +1,6 @@
 import * as THREE from 'three'
-import { createRandom } from './textures'
-
-export { createRandom }
+import { createRandom } from '../textures'
+import { patchShader } from './shader'
 
 /**
  * CC0 photogrammetry maps (ambientCG), pre-processed by
@@ -10,24 +9,14 @@ export { createRandom }
  * moulded plastic (normal + roughness) and handling smudges.
  */
 const base = import.meta.env.BASE_URL
-export const PHOTO_TEXTURES = {
+export const LIGHT_TEXTURES = {
   grainRough: `${base}textures/satin_rough.jpg`,
   grainNormal: `${base}textures/satin_normal.jpg`,
   /** Fingerprint / smudge roughness overlay (Fingerprints002). */
   smudge: `${base}textures/smudge.jpg`,
 } as const
 
-export type PhotoTextures = Record<keyof typeof PHOTO_TEXTURES, THREE.Texture>
-
-/** Roughness / normal maps are raw data, not colour. */
-export function preparePhotoTextures(textures: PhotoTextures) {
-  for (const [key, tex] of Object.entries(textures)) {
-    tex.colorSpace = THREE.NoColorSpace
-    tex.anisotropy = 8
-    if (key === 'smudge') tex.wrapS = tex.wrapT = THREE.RepeatWrapping
-    tex.needsUpdate = true
-  }
-}
+export type LightTextures = Record<keyof typeof LIGHT_TEXTURES, THREE.Texture>
 
 /**
  * Apple system colours (HIG, iOS 26, Default / light appearance) in the
@@ -48,47 +37,9 @@ export const FACE_COLORS = {
 /** The plastic body the colour tiles sit on: seen only in the seams and mid-turn. */
 const BODY_COLOR = '#2C2C2E'
 
-/**
- * Specular anti-aliasing. three.js widens highlights only for *geometric*
- * curvature, so normal-map detail finer than a pixel stays mirror-sharp and
- * sparkles as the cube moves. Using the perturbed normal's screen-space
- * derivatives raises roughness exactly where detail is sub-pixel.
- */
-const SPECULAR_AA_CHUNK = THREE.ShaderChunk.lights_physical_fragment.replace(
-  'material.roughness += geometryRoughness;',
-  /* glsl */ `
-  vec3 dxyDetail = max( abs( dFdx( normal ) ), abs( dFdy( normal ) ) );
-  float detailRoughness = max( max( dxyDetail.x, dxyDetail.y ), dxyDetail.z );
-  material.roughness += max( geometryRoughness, detailRoughness * 1.6 );`,
-)
-
-/** Handling marks: a photographed smudge map roughens the surface in patches. */
-const SMUDGE_DECL = /* glsl */ `
-uniform sampler2D uSmudge;
-uniform float uSmudgeAmount;
-uniform vec4 uSmudgeXform;
-`
-const SMUDGE_CHUNK = /* glsl */ `
-#include <roughnessmap_fragment>
-float smudge = texture2D( uSmudge, vRoughnessMapUv * uSmudgeXform.xy + uSmudgeXform.zw ).g;
-roughnessFactor = clamp( roughnessFactor + ( smudge - 0.16 ) * uSmudgeAmount, 0.04, 1.0 );
-`
-
-function patchShader(material: THREE.MeshPhysicalMaterial, smudge: THREE.Texture, amount: number, xform: THREE.Vector4) {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uSmudge = { value: smudge }
-    shader.uniforms.uSmudgeAmount = { value: amount }
-    shader.uniforms.uSmudgeXform = { value: xform }
-    shader.fragmentShader = SMUDGE_DECL + shader.fragmentShader
-      .replace('#include <roughnessmap_fragment>', SMUDGE_CHUNK)
-      .replace('#include <lights_physical_fragment>', SPECULAR_AA_CHUNK)
-  }
-  material.customProgramCacheKey = () => 'specular-aa+smudge'
-}
-
 export type FaceName = keyof typeof FACE_COLORS
 
-export type CubeMaterials = {
+export type LightMaterials = {
   faces: Record<FaceName, THREE.MeshPhysicalMaterial>
   body: THREE.MeshPhysicalMaterial
   dispose: () => void
@@ -102,7 +53,7 @@ export type CubeMaterials = {
  *
  * A roughness map MULTIPLIES `roughness`; the grain map's mean is ≈ 0.65.
  */
-export function createMaterials(photo: PhotoTextures, seed = 11): CubeMaterials {
+export function createLightMaterials(photo: LightTextures, seed = 11): LightMaterials {
   const rand = createRandom(seed)
   const all: THREE.MeshPhysicalMaterial[] = []
 

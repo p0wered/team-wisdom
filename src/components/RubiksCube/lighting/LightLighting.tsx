@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
-import { createBlindsTexture, createSoftSpotTexture } from './textures'
+import { createBlindsTexture, createSoftSpotTexture } from '../textures'
 
 RectAreaLightUniformsLib.init()
 
@@ -11,6 +11,14 @@ const SUN_DIR = new THREE.Vector3(-0.55, 0.62, 0.56).normalize()
 const SUN_COLOR = '#fff6ea' // late-morning sun, a touch warm
 const ROOM_COLOR = '#ffffff' // light, white-walled room
 const ROOM_GROUND = '#f4ece2' // warm, sunlit pale floor
+
+/**
+ * Slant of the blind's slats, chosen so that, cast from SUN_DIR, the bands
+ * land on a wall facing the viewer at 21° down to the right — the same slant
+ * as the bands on the light backdrop (Backdrop.tsx). Measured on a test wall:
+ * −0.42 → 15.6°, −0.25 → 22.6°.
+ */
+const BLINDS_SLANT = -0.28
 
 /** Tuning knobs — light levels are balanced so lit colours land on their swatches. */
 const LIGHT = {
@@ -38,8 +46,8 @@ const LIGHT = {
  * - Sun through the blind: soft warm bands moving over the faces.
  * - Environment: the window and the room, for reflections only.
  */
-export function Lighting() {
-  const textures = useMemo(() => ({ soft: createSoftSpotTexture(), blinds: createBlindsTexture() }), [])
+export function LightLighting() {
+  const textures = useMemo(() => ({ soft: createSoftSpotTexture(), blinds: createBlindsTexture(BLINDS_SLANT) }), [])
   useEffect(() => () => Object.values(textures).forEach((t) => t.dispose()), [textures])
 
   const target = useMemo(() => new THREE.Object3D(), [])

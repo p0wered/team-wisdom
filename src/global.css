@@ -7,12 +7,20 @@
 }
 
 :root {
-  /* Light theme: Apple's label and system-grey values (HIG, iOS 26). */
+  /* Light theme (default): Apple's label and system-grey values (HIG, iOS 26). */
   --ink: #1d1d1f;
   --ink-muted: #6e6e73;
   --ink-faint: #86868b;
   --line: rgb(0 0 0 / 0.14);
   --ground: #f5f5f7;
+
+  --button-primary-ink: #fff;
+  --button-primary-bg: var(--ink);
+  --button-primary-bg-hover: #000;
+  --button-primary-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 1px 2px rgb(0 0 0 / 0.12);
+  --button-secondary-bg: rgb(255 255 255 / 0.55);
+  --button-secondary-bg-hover: rgb(255 255 255 / 0.9);
+  --button-secondary-line-hover: rgb(0 0 0 / 0.24);
 
   /*
    * Type: Geologica + Martian Mono (both OFL, Latin + Cyrillic).
@@ -29,7 +37,23 @@
   --display-variation: 'SHRP' 100;
   --accent-case: uppercase;
   --accent-tracking: 0.02em;
+}
 
+/* Dark theme (?theme=dark): warm off-white ink in a dark, sunlit room. */
+:root[data-theme='dark'] {
+  --ink: #f4f1ec;
+  --ink-muted: #a19d97;
+  --ink-faint: #75716c;
+  --line: rgb(255 255 255 / 0.16);
+  --ground: #060606;
+
+  --button-primary-ink: #0b0b0b;
+  --button-primary-bg: var(--ink);
+  --button-primary-bg-hover: #fff;
+  --button-primary-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  --button-secondary-bg: rgb(255 255 255 / 0.02);
+  --button-secondary-bg-hover: rgb(255 255 255 / 0.06);
+  --button-secondary-line-hover: rgb(255 255 255 / 0.28);
 }
 
 html,

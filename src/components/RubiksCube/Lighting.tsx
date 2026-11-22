@@ -14,10 +14,10 @@ const ROOM_GROUND = '#f4ece2' // warm, sunlit pale floor
 
 /** Tuning knobs — light levels are balanced so lit colours land on their swatches. */
 const LIGHT = {
-  room: 2.1, // even light bounced from walls, ceiling and floor
-  sun: 1.8, // the blind's bands
-  key: 5, // softbox upper left
-  fill: 2.4, // white card on the right
+  room: 1.2, // even light bounced from walls, ceiling and floor
+  sun: 4.4, // the blind's bands
+  key: 2.6, // softbox upper left
+  fill: 2, // white card on the right
   rim: 5, // strip light above and behind: highlights along top edges
 }
 

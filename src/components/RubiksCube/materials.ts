@@ -74,25 +74,6 @@ float smudge = texture2D( uSmudge, vRoughnessMapUv * uSmudgeXform.xy + uSmudgeXf
 roughnessFactor = clamp( roughnessFactor + ( smudge - 0.16 ) * uSmudgeAmount, 0.04, 1.0 );
 `
 
-/**
- * Seam occlusion. Light can't reach into the narrow grooves between pieces,
- * so the last few percent of every face (its half of the bevel) darkens
- * towards the seam — the soft dark line real cubes have, instead of a hard
- * drawn one. Faked from the UVs: RoundedBoxGeometry maps each face 0→1
- * across, bevel included, so distance to the UV border is distance to the
- * seam. Mostly ambient and environment light; direct light only partly.
- */
-const SEAM_AO_CHUNK = /* glsl */ `
-#include <aomap_fragment>
-vec2 seamUv = vRoughnessMapUv;
-float seamDist = min( min( seamUv.x, 1.0 - seamUv.x ), min( seamUv.y, 1.0 - seamUv.y ) );
-float seamAO = mix( 0.3, 1.0, smoothstep( 0.0, 0.075, seamDist ) );
-reflectedLight.indirectDiffuse *= seamAO;
-// Grazing direct light reaches only partly into the groove.
-reflectedLight.directDiffuse *= mix( 0.55, 1.0, seamAO );
-reflectedLight.indirectSpecular *= mix( 0.5, 1.0, seamAO );
-`
-
 function patchShader(material: THREE.MeshPhysicalMaterial, smudge: THREE.Texture, amount: number, xform: THREE.Vector4) {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uSmudge = { value: smudge }
@@ -101,9 +82,8 @@ function patchShader(material: THREE.MeshPhysicalMaterial, smudge: THREE.Texture
     shader.fragmentShader = SMUDGE_DECL + shader.fragmentShader
       .replace('#include <roughnessmap_fragment>', SMUDGE_CHUNK)
       .replace('#include <lights_physical_fragment>', SPECULAR_AA_CHUNK)
-      .replace('#include <aomap_fragment>', SEAM_AO_CHUNK)
   }
-  material.customProgramCacheKey = () => 'specular-aa+smudge+seam-ao'
+  material.customProgramCacheKey = () => 'specular-aa+smudge'
 }
 
 export type FaceName = keyof typeof FACE_COLORS

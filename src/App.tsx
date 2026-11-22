@@ -12,9 +12,7 @@ export function App() {
   return (
     <main className={styles.page}>
       <div className={styles.backdrop} aria-hidden="true">
-        {/* CSS fallback, covered by the dithered shader backdrop when WebGL works */}
-        <div className={styles.glow} />
-        <div className={styles.beam} />
+        {/* The CSS gradient is the fallback; the shader backdrop covers it when WebGL works */}
         <Backdrop />
       </div>
 

@@ -61,10 +61,11 @@ export function RubiksCube({ className, viewHeight = 6.6 }: RubiksCubeProps) {
           alpha: true, // transparent: the page backdrop shows through
           stencil: false,
           powerPreference: 'high-performance',
-          toneMapping: THREE.ACESFilmicToneMapping,
-          // Low-key exposure: the original keeps the object mostly in shadow and
-          // lets light only graze faces and bevels.
-          toneMappingExposure: 0.62,
+          // Khronos PBR Neutral: keeps base colours true (ACES shifts yellow
+          // towards orange and desaturates the blues) — the Apple palette has
+          // to read as itself.
+          toneMapping: THREE.NeutralToneMapping,
+          toneMappingExposure: 1,
         }}
         onCreated={({ gl }) => gl.setClearColor('#000000', 0)}
       >
@@ -72,7 +73,7 @@ export function RubiksCube({ className, viewHeight = 6.6 }: RubiksCubeProps) {
         <Suspense fallback={null}>
           <Lighting />
           <Cube reducedMotion={reducedMotion} readyRef={readyRef} />
-          <Renderer readyRef={readyRef} bloomThreshold={3} bloomStrength={0.25} />
+          <Renderer readyRef={readyRef} bloomThreshold={3.5} bloomStrength={0.12} />
         </Suspense>
       </Canvas>
     </div>

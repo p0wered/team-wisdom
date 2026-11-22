@@ -5,8 +5,8 @@ import styles from './Backdrop.module.css'
  * The room behind the cube, drawn by a tiny fragment shader instead of CSS
  * gradients.
  *
- * Why: the wall goes from #191817 to #060606 — only ~13 brightness levels
- * across the whole screen. A CSS gradient is rounded to 8 bits as it is
+ * Why: the wall spans only a handful of brightness levels across the whole
+ * screen. A CSS gradient is rounded to 8 bits as it is
  * painted, so each level becomes a visible band, and noise laid on top
  * afterwards can't undo rounding that already happened. Here the gradient is
  * computed in floating point and dithered (±½ level) *before* it is written
@@ -44,33 +44,33 @@ void main() {
   vec2 p = vec2(px.x, uRes.y - px.y) / uDpr;    // CSS px, top-left origin
   vec2 uv = p / css;
 
-  // Wall: ellipse 120% × 85% centred at 38% / 0%, lighter towards the window.
-  float t = length((uv - vec2(0.38, 0.0)) / vec2(1.2, 0.85));
-  vec3 col = t < 0.42
-    ? mix(rgb(25.0, 24.0, 23.0), rgb(13.0, 12.0, 12.0), t / 0.42)
-    : mix(rgb(13.0, 12.0, 12.0), rgb(6.0, 6.0, 6.0), clamp((t - 0.42) / 0.30, 0.0, 1.0));
+  // Wall: Apple's pale grey, a little brighter and warmer towards the window
+  // (upper left), a little deeper towards the floor (lower right).
+  float t = length((uv - vec2(0.15, 0.0)) / vec2(1.25, 1.1));
+  vec3 col = mix(rgb(246.0, 245.0, 244.0), rgb(233.0, 233.0, 236.0), smoothstep(0.0, 1.0, t));
 
-  // Warm glow near the window (upper left).
-  float g = length((uv - vec2(0.45, 0.125)) / vec2(0.35, 0.375));
-  col = mix(col, rgb(255.0, 236.0, 214.0), 0.05 * (1.0 - smoothstep(0.0, 1.0, g)));
-
-  // Soft sheet of sunlight across the floor: a long ellipse near the bottom,
-  // tilted 6°, brightest a little left of centre, feathered like a blur.
-  vec2 c = vec2(0.5, 0.84) * css;
-  vec2 halfSize = vec2(0.8, 0.12) * css;
-  float a = radians(6.0);
+  // Sun through the blind, landing on the wall behind the cube: a soft,
+  // slanted patch of light cut into bands by the slats. Everything is
+  // blurred heavily — the wall is far from the window.
+  vec2 c = vec2(0.70, 0.47) * css;
+  float a = radians(-21.0);
   vec2 q = p - c;
   q = vec2(q.x * cos(a) - q.y * sin(a), q.x * sin(a) + q.y * cos(a));
-  float e = length(q / halfSize);
-  float feather = 34.0 / halfSize.y;
-  float inside = 1.0 - smoothstep(1.0 - feather, 1.0 + feather, e);
-  float s = clamp(q.x / (2.0 * halfSize.x) + 0.5, 0.0, 1.0);
-  float profile =
-      s < 0.22 ? mix(0.0, 0.04, s / 0.22)
-    : s < 0.42 ? mix(0.04, 0.09, (s - 0.22) / 0.20)
-    : s < 0.68 ? mix(0.09, 0.03, (s - 0.42) / 0.26)
-    :            mix(0.03, 0.0, (s - 0.68) / 0.32);
-  col = mix(col, rgb(255.0, 238.0, 220.0), profile * inside);
+  q.x += q.y * 0.28; // sheared: light falls in at an angle
+  vec2 halfSize = vec2(0.27 * css.x, 0.40 * css.y);
+  float feather = 0.10 * css.y;
+  float patchX = 1.0 - smoothstep(halfSize.x - feather, halfSize.x + feather, abs(q.x));
+  float patchY = 1.0 - smoothstep(halfSize.y - feather, halfSize.y + feather, abs(q.y));
+  float window = patchX * patchY;
+  float period = 0.125 * css.y;
+  float ph = fract(q.y / period);
+  float slat = smoothstep(0.0, 0.22, ph) * (1.0 - smoothstep(0.46, 0.70, ph));
+  float sun = window * (0.30 + 0.70 * slat);
+  col = mix(col, rgb(255.0, 251.0, 244.0), sun * 0.82);
+
+  // Faint warm haze where the sun enters (upper left).
+  float g = length((uv - vec2(0.18, 0.05)) / vec2(0.55, 0.5));
+  col = mix(col, rgb(255.0, 250.0, 240.0), 0.35 * (1.0 - smoothstep(0.0, 1.0, g)));
 
   // Film grain: one value per CSS pixel per frame, signed.
   float grain = hash(vec3(floor(p), uFrame)) - 0.5;
@@ -92,7 +92,7 @@ type BackdropProps = {
   grain?: number
 }
 
-export function Backdrop({ className, grain = 0.022 }: BackdropProps) {
+export function Backdrop({ className, grain = 0.014 }: BackdropProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {

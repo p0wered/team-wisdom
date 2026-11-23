@@ -39,6 +39,17 @@
   --accent-tracking: 0.02em;
 }
 
+/*
+ * Large screens: the whole layout grows with the viewport, like browser zoom.
+ * Sizes are in rem, so the root size is the one dial. Up to 1600px wide it is
+ * the browser default (100%); from there it rises linearly to 130% at 3440px
+ * (34" ultrawide), roughly 105% at 1920 and 116% at 2560, and stops there.
+ * Percentages, not px, so a reader's own default font size still counts.
+ */
+html {
+  font-size: clamp(100%, 73.9% + 0.261vw, 130%);
+}
+
 html,
 body {
   margin: 0;

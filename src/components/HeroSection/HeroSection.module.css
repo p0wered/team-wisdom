@@ -4,7 +4,7 @@
   display: grid;
   align-items: center;
   min-height: 100dvh;
-  padding-block: clamp(64px, 10vh, 120px);
+  padding-block: clamp(4rem, 10vh, 7.5rem);
 }
 
 /*
@@ -14,16 +14,16 @@
 .wrap {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: clamp(24px, 4vw, 64px);
+  gap: clamp(1.5rem, 4vw, 4rem);
   align-items: center;
   width: 100%;
-  max-width: 1240px;
+  max-width: 77.5rem;
   margin-inline: auto;
-  padding-inline: clamp(16px, 5vw, 48px);
+  padding-inline: clamp(1rem, 5vw, 3rem);
 }
 
 .copy {
-  max-width: 620px;
+  max-width: 38.75rem;
 }
 
 .title {
@@ -40,7 +40,7 @@
 
 .lead {
   max-width: 46ch;
-  margin: 24px 0 0;
+  margin: 1.5rem 0 0;
   font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
   font-weight: 100;
   line-height: 1.6;
@@ -51,8 +51,8 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 36px;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
 }
 
 /* Same proportions as the original's canvas (648 × 550). */
@@ -97,7 +97,11 @@
   }
 }
 
-/* Tablet and phone: text first, cube below. */
+/*
+ * Tablet and phone: one column — headline and lead, then the cube, then the
+ * buttons. `.copy` dissolves (display: contents) so its children and the
+ * cube share one grid and `order` can put the cube between them.
+ */
 @media (max-width: 900px) {
   .hero {
     align-items: start;
@@ -105,16 +109,28 @@
 
   .wrap {
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+    gap: 0;
   }
 
   .copy {
+    display: contents;
+  }
+
+  .title,
+  .lead {
     max-width: 600px;
   }
 
   .visual {
+    order: 1;
     max-width: 560px;
     justify-self: center;
+    margin-top: 8px;
+  }
+
+  .actions {
+    order: 2;
+    margin-top: 8px;
   }
 }
 

@@ -55,11 +55,16 @@
   margin-top: 2.25rem;
 }
 
-/* Same proportions as the original's canvas (648 × 550). */
+/*
+ * Same proportions as the original's canvas (648 × 550). The cube itself is
+ * at least 320px tall (RubiksCube.module.css); the box matches that, so on
+ * narrow phones the cube stays centred in it instead of hanging below.
+ */
 .visual {
   position: relative;
   width: 100%;
   aspect-ratio: 648 / 550;
+  min-height: 320px;
 }
 
 .cube {
@@ -97,7 +102,11 @@
   }
 }
 
-/* Tablet and phone: text first, cube below. */
+/*
+ * Tablet and phone: one column — headline and lead, then the cube, then the
+ * buttons. `.copy` dissolves (display: contents) so its children and the
+ * cube share one grid and `order` can put the cube between them.
+ */
 @media (max-width: 900px) {
   .hero {
     align-items: start;
@@ -105,16 +114,34 @@
 
   .wrap {
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+    gap: 0;
   }
 
   .copy {
+    display: contents;
+  }
+
+  .title,
+  .lead {
     max-width: 600px;
   }
 
+  /*
+   * When a corner points straight up or down, the cube reaches ≈ 2.5 % of
+   * the box height past the box (2.62 units from its centre, box = 5 units;
+   * see RubiksCube/frame.ts). The margins keep that corner clear of the
+   * text above and the buttons below.
+   */
   .visual {
+    order: 1;
     max-width: 560px;
     justify-self: center;
+    margin-block: clamp(1.25rem, 5vw, 2rem);
+  }
+
+  .actions {
+    order: 2;
+    margin-top: 0;
   }
 }
 

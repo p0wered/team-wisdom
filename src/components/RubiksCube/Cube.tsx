@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { useTexture } from '@react-three/drei'
 import { createCubeMaterials, CUBE_TEXTURES, prepareTextures, type CubeTextures } from './materials'
+import { BLEED_FACTOR } from './frame'
 
 /** Distance between neighbouring cubie centres. */
 const SPACING = 1
@@ -306,7 +307,8 @@ export function Cube({ reducedMotion = false, readyRef }: CubeProps) {
 
   // Camera FOV is vertical, so on portrait screens the cube would overflow
   // horizontally. Below ~0.85 aspect, shrink it in proportion to the width.
-  const aspect = viewport.width / Math.max(viewport.height, 1)
+  // Measured on the layout box, not the taller canvas (frame.ts).
+  const aspect = (viewport.width / Math.max(viewport.height, 1)) * BLEED_FACTOR
   const fitScale = Math.min(1, aspect / 0.85)
 
   const smoothPointer = useRef(new THREE.Vector2())

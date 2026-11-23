@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { Renderer } from './Renderer'
 import { Cube } from './Cube'
 import { Lighting } from './Lighting'
+import { BLEED_FACTOR, CANVAS_BLEED } from './frame'
 import styles from './RubiksCube.module.css'
 
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
@@ -24,14 +25,15 @@ function usePrefersReducedMotion() {
  * Orthographic (isometric-style) projection: no perspective at all — parallel
  * edges, no near/far size difference. R3F sizes the ortho frustum in pixels,
  * so `zoom` (pixels per world unit) is derived from the canvas height to show
- * exactly `viewHeight` world units, whatever the window size.
+ * exactly `viewHeight` world units across the layout box, whatever the window
+ * size. The canvas is taller than the box (see frame.ts), so it shows more.
  */
 function OrthoFit({ viewHeight }: { viewHeight: number }) {
   const camera = useThree((s) => s.camera)
   const height = useThree((s) => s.size.height)
   useLayoutEffect(() => {
     if (!(camera instanceof THREE.OrthographicCamera)) return
-    camera.zoom = height / viewHeight
+    camera.zoom = height / (viewHeight * BLEED_FACTOR)
     camera.updateProjectionMatrix()
   }, [camera, height, viewHeight])
   return null
@@ -42,7 +44,7 @@ const BLOOM = { threshold: 3.5, strength: 0.12 }
 
 type RubiksCubeProps = {
   className?: string
-  /** World units visible vertically; smaller = bigger cube in frame. */
+  /** World units across the layout box's height; smaller = bigger cube. */
   viewHeight?: number
 }
 
@@ -55,6 +57,17 @@ export function RubiksCube({ className, viewHeight = 6.6 }: RubiksCubeProps) {
     <div className={[styles.root, className].filter(Boolean).join(' ')} aria-hidden="true">
       <Canvas
         className={styles.canvas}
+        // Bleeds past the box so corners are never cut off (frame.ts).
+        // Inline, because R3F sets its own inline size on this wrapper.
+        // No pointer events: the cube follows the page pointer itself
+        // (Cube.tsx), and the bleed must not catch clicks on the buttons.
+        style={{
+          position: 'absolute',
+          inset: `${-CANVAS_BLEED * 100}% 0`,
+          width: 'auto',
+          height: 'auto',
+          pointerEvents: 'none',
+        }}
         dpr={[1, 2]}
         shadows="percentage"
         orthographic

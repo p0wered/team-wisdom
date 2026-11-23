@@ -26,6 +26,46 @@ function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingContext2
   return tex
 }
 
+/**
+ * Gaussian-like blur of the whole canvas, done on the pixels: three box-blur
+ * passes each way. Not `ctx.filter = 'blur()'`: Safari (iOS included) ignores
+ * canvas filters, and the blur came out as hard-edged rectangles there.
+ * Width 2r+1 = 25 gives σ ≈ 12.5, a close match for CSS `blur(12px)`.
+ */
+function blurCanvas(ctx: CanvasRenderingContext2D, w: number, h: number, sigma: number) {
+  const r = Math.max(1, Math.round((Math.sqrt(4 * sigma * sigma + 1) - 1) / 2))
+  const img = ctx.getImageData(0, 0, w, h)
+  const a = Float32Array.from(img.data)
+  const b = new Float32Array(a.length)
+
+  // One box pass along rows (horizontal) or columns, edges clamped.
+  const pass = (src: Float32Array, dst: Float32Array, horizontal: boolean) => {
+    const n = horizontal ? w : h
+    const lines = horizontal ? h : w
+    const step = horizontal ? 4 : w * 4
+    const norm = 1 / (2 * r + 1)
+    for (let line = 0; line < lines; line++) {
+      const base = horizontal ? line * w * 4 : line * 4
+      for (let c = 0; c < 4; c++) {
+        const at = (i: number) => src[base + Math.min(n - 1, Math.max(0, i)) * step + c]
+        let sum = 0
+        for (let k = -r; k <= r; k++) sum += at(k)
+        for (let i = 0; i < n; i++) {
+          dst[base + i * step + c] = sum * norm
+          sum += at(i + r + 1) - at(i - r)
+        }
+      }
+    }
+  }
+
+  for (let i = 0; i < 3; i++) {
+    pass(a, b, true)
+    pass(b, a, false)
+  }
+  img.data.set(a)
+  ctx.putImageData(img, 0, 0)
+}
+
 /** Soft radial falloff — turns rectangular light panels into soft boxes. */
 export function createSoftSpotTexture() {
   return canvasTexture(256, 256, (ctx) => {
@@ -58,7 +98,6 @@ export function createBlindsTexture(
     ctx.fillRect(0, 0, S, S)
 
     ctx.save()
-    ctx.filter = 'blur(12px)'
     ctx.translate(S / 2, S / 2)
     ctx.rotate(slant)
     // Whole window: light scattered through/around the slats. Canvas values
@@ -81,5 +120,8 @@ export function createBlindsTexture(
     ctx.fillStyle = 'rgba(0,0,0,0.3)'
     ctx.fillRect(S * 0.12, -S * 0.5, 8, S)
     ctx.restore()
+
+    // Wide, soft penumbrae: the window is far from the cube.
+    blurCanvas(ctx, S, S, 12)
   })
 }
